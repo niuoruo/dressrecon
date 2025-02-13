@@ -1,0 +1,7 @@
+database
+logdir
+*.log
+projects
+tmp
+lab4d
+make_gifs.py
