@@ -64,7 +64,7 @@ def main(
 
     # load images
     seqname = find_seqname(args.testdir)
-    img_dir = f"database/processed/JPEGImages/Full-Resolution/{seqname}"
+    img_dir = f"../autodl-tmp/JPEGImages/Full-Resolution/{seqname}"
     rgb_list = [cv2.imread(f"{img_dir}/{i:05d}.jpg") for i in range(num_frames)]
     rgb_list = [rgb[::downsample_factor, ::downsample_factor, ::-1] for rgb in rgb_list]
 

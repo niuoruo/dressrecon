@@ -301,16 +301,37 @@ class dvr_model(nn.Module):
             #     res = int(np.sqrt(v.shape[1]))
             #     out = v.view(div_factor, res, res, -1)[0].detach().cpu()
             #     rendered[f"{k}_id-bg"].append(out)
+        # Debug print available keys
+        print("Available rendered keys:", rendered.keys())
 
+        # First, stack all rendered items into tensors and verify
         for k, v in rendered.items():
-            rendered[k] = torch.stack(v, 0)
+            try:
+                rendered[k] = torch.stack(v, 0)
+            except Exception as e:
+                print(f"Error stacking tensor for key {k}: {e}")
+                print(f"Shape/type of v: {type(v)}, len: {len(v)}")
+                raise
 
-        # blend with mask: render = render * mask + 0*(1-mask)
+        # Check for required mask and provide fallback
+        if "mask_id-fg" not in rendered:
+            if "mask" in rendered:
+                rendered["mask_id-fg"] = rendered["mask"]
+            else:
+                # Create a default mask of ones if no mask is available
+                sample_key = next(iter(rendered.keys()))
+                mask_shape = rendered[sample_key].shape[:3] + (1,)  # Assuming BHWC format
+                rendered["mask_id-fg"] = torch.ones(mask_shape, device=rendered[sample_key].device)
+
+        # Then apply masks with verification
         for k, v in rendered.items():
             if "mask" in k:
                 continue
             elif "xyz_matches" in k or "xyz_reproj" in k:
-                rendered[k] = rendered[k] * (rendered["mask_id-fg"] > 0.5).float()
+                mask = rendered["mask_id-fg"]
+                if not isinstance(mask, torch.Tensor):
+                    raise TypeError(f"mask_id-fg is {type(mask)}, expected torch.Tensor")
+                rendered[k] = rendered[k] * (mask > 0.5).float()
             elif "xy_reproj" in k:
                 mask = batch["feature"][::div_factor].norm(2, -1, keepdim=True) > 0
                 res = rendered[k].shape[1]
@@ -323,6 +344,7 @@ class dvr_model(nn.Module):
                 else:
                     mask = rendered["mask"]
                 rendered[k] = rendered[k] * mask
+
         scalars = {}
         return rendered, scalars
 

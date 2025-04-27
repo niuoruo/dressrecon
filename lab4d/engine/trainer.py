@@ -31,8 +31,11 @@ class Trainer:
         """
         self.opts = opts
 
+        # 读取数据集并且划分为train_dict eval_dict
         self.define_dataset()
+        # 初始化标识符，文件夹等
         self.trainer_init()
+        # 初始化模型
         self.define_model()
 
         self.optimizer_init(is_resumed=opts["load_path"] != "")
@@ -77,12 +80,15 @@ class Trainer:
             img_path = str(config.get(f"data_{vidid}", "img_path")).strip("/")
             vidname = img_path.split("/")[-1]
             uncertainty_name = f"{vidname}-{opts['data_prefix']}-{opts['train_res']}"
+            # 从对应npy中读取图像信息 不止RGB，以及提取的feature, mask, flow...
             rgb_path = f"{img_path}/{opts['data_prefix']}-{opts['train_res']}.npy"
 
+            # 从图像信息中获取图像的大小 N, H, W
             shape = np.load(rgb_path, mmap_mode="r").shape[:-1]  # N, H, W
             uncertainty = np.ones(shape, dtype=np.float32)
             self.uncertainty_map[uncertainty_name] = uncertainty
 
+        # 划分训练集和验证集 训练集会标记为crop表示裁剪 验证机标记为full表示全分辨率
         train_dict = self.construct_dataset_opts(opts)
         self.trainloader = data_utils.train_loader(train_dict, self.uncertainty_map)
 
@@ -91,6 +97,7 @@ class Trainer:
 
         self.data_info, self.data_path_dict = data_utils.get_data_info(self.evalloader)
 
+        # 计算训练轮次
         self.total_steps = opts["num_rounds"] * min(
             opts["iters_per_round"] * opts["grad_accum"], len(self.trainloader)
         )
@@ -112,12 +119,15 @@ class Trainer:
 
         self.init_model()
 
+        # 储存训练信息
         # cache queue of length 2
         self.model_cache = [None, None]
         self.optimizer_cache = [None, None]
         self.scheduler_cache = [None, None]
 
         self.grad_queue = {}
+        
+        # 梯度裁剪参数 防止梯度爆炸
         self.param_clip_startwith = {
             "fields.field_params.fg.camera_mlp": 10.0,
             "fields.field_params.fg.warp.articulation": 10.0,
@@ -604,6 +614,8 @@ class Trainer:
         """
         # io
         logname = f"{opts['seqname']}-{opts['logname']}"
+        print(f"seqname:{opts['seqname']}")
+        print(f"logname:{opts['logname']}")
         meta_filename = f"{opts['logroot']}/{logname}/metadata.pth"
 
         if not os.path.exists(meta_filename):

@@ -48,7 +48,7 @@ class TrainOptConfig:
     flags.DEFINE_integer("train_res", 256, "size of training images")
     flags.DEFINE_float("uncertainty_ema", 0.75, "coefficient for uncertainty moving average")
     flags.DEFINE_float("uncertainty_factor", 0.5, "percentage of pixels to sample according to uncertainty")
-    flags.DEFINE_string("logroot", "logdir/", "root directory for log files")
+    flags.DEFINE_string("logroot", "../autodl-tmp/logdir/", "root directory for log files")
     flags.DEFINE_string("load_suffix", "latest", "suffix of params, {latest, 0, 10, ...}")
     flags.DEFINE_string("feature_type", "dinov2", "{dinov2, cse}")
     flags.DEFINE_string("load_path", "", "path to load pretrained model")
